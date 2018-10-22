@@ -13,6 +13,7 @@
 
 var ReadStream = require('fs').ReadStream
 var Stream = require('stream')
+var zlib = require('zlib')
 
 /**
  * Module exports.
@@ -37,8 +38,48 @@ function destroy (stream) {
     return stream
   }
 
+  if (stream instanceof zlib.Gzip ||
+      stream instanceof zlib.Gunzip ||
+      stream instanceof zlib.Deflate ||
+      stream instanceof zlib.DeflateRaw ||
+      stream instanceof zlib.Inflate ||
+      stream instanceof zlib.InflateRaw ||
+      stream instanceof zlib.Unzip) {
+    return destroyZlibStream(stream)
+  }
+
   if (typeof stream.destroy === 'function') {
     stream.destroy()
+  }
+
+  return stream
+}
+
+/**
+ * Destroy a zlib stream
+ *
+ * Zlib streams doesn't have a destroy function in Node.js 6. On top of that
+ * simply calling destroy on a zlib stream in Node.js 8+ will result in a
+ * memory leak. So until that is fixed, we need to call both close AND destroy.
+ *
+ * PR to fix memory leak: https://github.com/nodejs/node/pull/23734
+ *
+ * In Node.js 6+8, it's important that destroy is called before close as the
+ * stream would otherwise emit the error 'zlib binding closed'.
+ *
+ * @param {object} stream
+ * @private
+ */
+
+function destroyZlibStream (stream) {
+  // first destory stream
+  if (typeof stream.destroy === 'function') {
+    stream.destroy()
+  }
+
+  // second, close stream for node.js core leak
+  if (typeof stream.close === 'function') {
+    stream.close()
   }
 
   return stream

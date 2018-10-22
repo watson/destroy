@@ -27,7 +27,11 @@ Destroy the given stream. In most cases, this is identical to a simple
      fired. This is for a Node.js bug that will leak a file descriptor if
      `.destroy()` is called before `open`.
   2. If the `stream` is not an instance of `Stream`, then nothing happens.
-  3. If the `stream` has a `.destroy()` method, then call it.
+  3. If the `stream` is a zlib stream, it will first call
+     `stream.destroy()` (if that function exists), followed by
+     `stream.close()` as that will correctly release the zlib handle from
+     memory.
+  4. If the `stream` has a `.destroy()` method, then call it.
 
 The function returns the `stream` passed in as the argument.
 

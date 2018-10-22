@@ -2,6 +2,7 @@
 var assert = require('assert')
 var fs = require('fs')
 var net = require('net')
+var zlib = require('zlib')
 
 var destroy = require('..')
 
@@ -69,6 +70,47 @@ describe('destroy', function () {
 
       server.listen(0, function () {
         socket = net.connect(this.address().port)
+      })
+    })
+  })
+
+  describe('Zlib', function () {
+    var version = process.versions.node.split('.').map(function (n) {
+      return Number(n)
+    })
+    var preNode0_10 = version[0] === 0 && version[1] < 10
+    var types = ['Gzip', 'Gunzip', 'Deflate', 'DeflateRaw', 'Inflate', 'InflateRaw', 'Unzip']
+
+    types.forEach(function (type) {
+      var method = 'create' + type
+
+      describe('.' + type, function () {
+        describe('when call sync', function () {
+          it('should destory stream', function () {
+            var stream = zlib[method]()
+            destroy(stream)
+            if (preNode0_10) {
+              assert.strictEqual(stream._ended, true)
+            } else {
+              assert.strictEqual(stream._closed, true)
+            }
+          })
+        })
+
+        describe('when call async', function () {
+          it('should destroy stream', function (done) {
+            var stream = zlib[method]()
+            setTimeout(function () {
+              destroy(stream)
+              if (preNode0_10) {
+                assert.strictEqual(stream._ended, true)
+              } else {
+                assert.strictEqual(stream._closed, true)
+              }
+              done()
+            }, 0)
+          })
+        })
       })
     })
   })
