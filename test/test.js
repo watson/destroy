@@ -75,10 +75,6 @@ describe('destroy', function () {
   })
 
   describe('Zlib', function () {
-    var version = process.versions.node.split('.').map(function (n) {
-      return Number(n)
-    })
-    var preNode0_10 = version[0] === 0 && version[1] < 10
     var types = ['Gzip', 'Gunzip', 'Deflate', 'DeflateRaw', 'Inflate', 'InflateRaw', 'Unzip']
 
     types.forEach(function (type) {
@@ -86,29 +82,24 @@ describe('destroy', function () {
 
       describe('.' + type, function () {
         describe('when call sync', function () {
-          it('should destory stream', function () {
+          it('should destory stream', function (done) {
             var stream = zlib[method]()
+            stream.on('close', function () {
+              done()
+            })
             destroy(stream)
-            if (preNode0_10) {
-              assert.strictEqual(stream._ended, true)
-            } else {
-              assert.strictEqual(stream._closed, true)
-            }
           })
         })
 
         describe('when call async', function () {
           it('should destroy stream', function (done) {
             var stream = zlib[method]()
+            stream.on('close', function () {
+              done()
+            })
             setTimeout(function () {
               destroy(stream)
-              if (preNode0_10) {
-                assert.strictEqual(stream._ended, true)
-              } else {
-                assert.strictEqual(stream._closed, true)
-              }
-              done()
-            }, 0)
+            }, 10)
           })
         })
       })

@@ -56,7 +56,7 @@ function destroy (stream) {
 }
 
 /**
- * Destroy a zlib stream
+ * Destroy a Zlib stream.
  *
  * Zlib streams doesn't have a destroy function in Node.js 6. On top of that
  * simply calling destroy on a zlib stream in Node.js 8+ will result in a
@@ -72,13 +72,15 @@ function destroy (stream) {
  */
 
 function destroyZlibStream (stream) {
-  // first destory stream
   if (typeof stream.destroy === 'function') {
     stream.destroy()
-  }
 
-  // second, close stream for node.js core leak
-  if (typeof stream.close === 'function') {
+    // node.js core bug work-around
+    var handle = stream._handle || stream._binding
+    if (typeof handle.close === 'function') {
+      handle.close()
+    }
+  } else if (typeof stream.close === 'function') {
     stream.close()
   }
 
